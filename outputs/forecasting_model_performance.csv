@@ -1,0 +1,4 @@
+Model,MAE,RMSE
+Baseline,75.71,78.99
+Model A - Dengue only,197.95,232.15
+Model B - Dengue + Rainfall,224.28,258.44
