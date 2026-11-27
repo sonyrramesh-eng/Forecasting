@@ -1,139 +1,68 @@
-# Karnataka Dengue Trend Analysis and Outbreak Forecasting
+# Backend – Karnataka Dengue & Rainfall
 
-## Project Overview
+This backend is connected to the existing Streamlit project and uses the actual CSV files already present in `data/` and `outputs/`. It does not download substitute data or fabricate records.
 
-This project focuses on analyzing historical dengue cases in Karnataka and exploring the relationship between dengue trends and rainfall patterns.
+## Architecture
+- **FastAPI** exposes REST endpoints for integrations and future frontends.
+- **SQLite** persists synchronized copies of the existing project datasets in `data/database/karnataka_dengue.sqlite3`.
+- **Repository layer** checks source-file modification times and refreshes the matching SQLite table when a CSV changes.
+- **Streamlit integration**: `dashboard/app.py` loads its six primary dashboard datasets through `backend.repository.read_dataset()`.
 
-It uses data analytics, exploratory data analysis, statistical correlation and machine learning techniques to understand disease trends and experiment with monthly dengue forecasting.
+The CSV artifacts remain the source of truth. SQLite is the queryable backend store/cache.
 
-An interactive Streamlit dashboard is also developed to present the analysis and forecasting results.
+## Run
 
-## Objectives
-
-- Analyze historical dengue cases across Karnataka.
-- Study dengue trends across 31 districts.
-- Investigate data quality issues and reporting gaps.
-- Analyze rainfall patterns and their relationship with dengue cases.
-- Explore whether rainfall information improves dengue forecasting.
-- Build an interactive dashboard to visualize findings.
-
-## Dataset Details
-
-**Dengue Dataset**
-- Disease: Dengue
-- Region: Karnataka, India
-- Data frequency: Daily district-level records
-- Source file: `ka-dengue-daily-summary.csv`
-
-**Rainfall Dataset**
-- Region: Karnataka, India
-- Period: 2017–2025
-- Data frequency: Daily station-level observations
-- Processed into district-level daily rainfall averages.
-
-The dengue and rainfall datasets were standardized and combined using district names and dates.
-
-## Technologies Used
-
-- Python
-- Pandas
-- NumPy
-- Matplotlib
-- Seaborn
-- Scikit-learn
-- Plotly
-- Streamlit
-
-## Project Methodology
-
-### 1. Data Collection
-Collected historical dengue and rainfall datasets for Karnataka.
-
-### 2. Data Cleaning and Preparation
-- Inspected missing values and duplicate records.
-- Investigated conflicting district-date records.
-- Standardized district names.
-- Prepared district-level rainfall data.
-- Integrated dengue and rainfall datasets.
-- Examined reporting completeness and data quality.
-
-### 3. Exploratory Data Analysis
-- Monthly dengue trend analysis.
-- Monthly rainfall trend analysis.
-- Statewide dengue and rainfall comparison.
-- District-wise correlation analysis.
-- Seasonality-adjusted correlation analysis.
-
-### 4. Forecasting
-Prepared a monthly forecasting dataset and created lag-based features.
-
-Compared three approaches:
-
-1. Baseline model
-2. Dengue-only Linear Regression
-3. Dengue + Rainfall Linear Regression
-
-### 5. Dashboard Development
-Developed an interactive Streamlit dashboard with five sections:
-
-- Overview
-- Dengue Analysis
-- Rainfall Analysis
-- District Analysis
-- Forecasting Results
-
-## Forecasting Results
-
-| Model | MAE | RMSE |
-|---|---:|---:|
-| Baseline | 75.71 | 78.99 |
-| Dengue Only | 197.95 | 232.15 |
-| Dengue + Rainfall | 224.28 | 258.44 |
-
-The baseline model achieved the lowest error in the initial experiment.
-
-Adding rainfall did not improve forecasting accuracy in this experiment.
-
-## How to Run the Project
-
-### 1. Clone the repository
-
-```bash
-git clone YOUR_GITHUB_REPOSITORY_URL
-```
-
-### 2. Navigate to the project folder
-
-```bash
-cd Forecasting
-```
-
-### 3. Install dependencies
+From the project root:
 
 ```bash
 python -m pip install -r requirements.txt
+python -m uvicorn backend.main:app --reload
 ```
 
-### 4. Launch the dashboard
+Open:
+- API: http://127.0.0.1:8000/
+- Interactive API docs: http://127.0.0.1:8000/docs
+- Health/database status: http://127.0.0.1:8000/health
+
+In a second terminal, start the connected dashboard:
 
 ```bash
 python -m streamlit run dashboard/app.py
 ```
 
-## Project Limitations
+## API routes
 
-- Some dengue records contain unresolved conflicting values.
-- Reporting gaps may affect trend analysis.
-- Rainfall and dengue correlation does not establish causation.
-- The forecasting test dataset contains only seven monthly observations.
-- Forecasting results are exploratory and require further validation.
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/health` | API and SQLite/dataset status |
+| GET | `/datasets` | Registered datasets |
+| POST | `/admin/sync?force=true` | Re-import source CSV files |
+| GET | `/summary` | Overall dengue totals |
+| GET | `/districts` | District names |
+| GET | `/daily?district=BENGALURU%20URBAN` | Daily combined data |
+| GET | `/monthly` | Monthly dengue trend |
+| GET | `/rainfall/monthly` | Monthly rainfall |
+| GET | `/forecast/performance` | Saved model metrics |
+| GET | `/forecast/predictions` | Saved actual/predicted values |
+| GET | `/correlations` | Validated district correlations |
+| GET | `/data-quality` | Reporting completeness and dataset registry |
 
-## Conclusion
+## Data actually ingested
 
-This project demonstrates how historical disease and rainfall data can be combined to explore dengue trends in Karnataka.
+The backend synchronizes the following existing files when present:
+- `outputs/karnataka_dengue_rainfall_combined.csv`
+- `outputs/karnataka_monthly_dengue_trend.csv`
+- `outputs/forecasting_model_predictions.csv`
+- `outputs/forecasting_model_performance.csv`
+- `outputs/karnataka_monthly_rainfall.csv`
+- `outputs/validated_district_correlations.csv`
+- `outputs/karnataka_primary_eda_dataset.csv`
+- `outputs/karnataka_monthly_forecasting_dataset.csv`
+- `outputs/monthly_reporting_completeness.csv`
+- `data/processed/karnataka_district_daily_rainfall.csv`
+- `data/raw/ka-dengue-daily-summary.csv`
 
-The analysis identifies patterns, examines possible rainfall relationships and evaluates initial forecasting approaches.
+If an output artifact is absent, it is not silently replaced with mock data. Run the existing preparation notebooks/scripts that create that artifact first.
 
-The interactive dashboard provides a convenient way to explore the findings.
-
-The project is intended for analytical and educational purposes and does not provide a validated operational outbreak prediction system.
+## Important
+The forecasting endpoints expose the project's saved experimental results. They do not claim a newly trained or clinically validated outbreak model. The reported test period is small, and the original project limitations still apply.
